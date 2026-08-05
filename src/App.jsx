@@ -53,9 +53,20 @@ export default function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/register" element={!session ? <Register /> : <Navigate to="/dashboard" />} />
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
-        <Route path="/pending" element={session ? <Pending player={player} /> : <Navigate to="/login" />} />
-        <Route path="/dashboard" element={session ? (player?.status === 'approved' ? <Dashboard player={player} /> : <Navigate to="/pending" />) : <Navigate to="/login" />} />
-        <Route path="/standings" element={<Standings />} />
+       <Route path="/pending" element={
+  session
+    ? player?.status === 'approved'
+      ? <Navigate to="/dashboard" />
+      : <Pending player={player} />
+    : <Navigate to="/login" />
+} />
+<Route path="/dashboard" element={
+  session
+    ? player?.status === 'approved'
+      ? <Dashboard player={player} />
+      : <Navigate to="/pending" />
+    : <Navigate to="/login" />
+} />        <Route path="/standings" element={<Standings />} />
         <Route path="/fixtures" element={<Fixtures player={player} />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
