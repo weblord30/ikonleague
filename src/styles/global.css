@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bebas+Neue&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #00C896;
+  --green-dk: #009e78;
+  --dark: #0B0E14;
+  --card: #141820;
+  --card2: #1c2230;
+  --muted: #6b7280;
+  --border: #252d3a;
+  --text: #f0f4f8;
+  --sub: #94a3b8;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--dark);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: .04em; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+input, select, textarea {
+  font-family: 'Inter', sans-serif;
+}
+
+a { text-decoration: none; color: inherit; }
