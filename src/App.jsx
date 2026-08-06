@@ -51,7 +51,11 @@ export default function App() {
     <>
       <Navbar session={session} player={player} />
       <Routes>
-        <Route path="/" element={<Landing session={session} player={player} />} />
+        <Route path="/" element={
+          session?.user?.email === 'at.trials00@gmail.com'
+            ? <Navigate to="/admin" />
+            : <Landing session={session} player={player} />
+        } />
         <Route path="/terms" element={<Terms />} />
         <Route path="/register" element={!session ? <Register /> : <Navigate to="/" />} />
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
