@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { supabase } from './supabase'
+import { supabase, ADMIN_EMAIL } from './supabase'
 import Navbar from './components/Navbar'
 import Landing from './pages/Landing'
 import Register from './pages/Register'
@@ -13,22 +13,23 @@ import Terms from './pages/Terms'
 import Admin from './pages/Admin'
 import InstallBanner from './components/InstallBanner'
 import SetPassword from './pages/SetPassword'
-import { ADMIN_EMAIL } from './supabase'
 
 export default function App() {
   const [session, setSession] = useState(null)
   const [player, setPlayer] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const isAdmin = session?.user?.email === ADMIN_EMAIL
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session) fetchPlayer(session.user.id)
+      if (session && session.user.email !== ADMIN_EMAIL) fetchPlayer(session.user.id)
       else setLoading(false)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      if (session) fetchPlayer(session.user.id)
+      if (session && session.user.email !== ADMIN_EMAIL) fetchPlayer(session.user.id)
       else { setPlayer(null); setLoading(false) }
     })
     return () => subscription.unsubscribe()
@@ -53,7 +54,7 @@ export default function App() {
       <Navbar session={session} player={player} />
       <Routes>
         <Route path="/" element={
-          session?.user?.email === ADMIN_EMAIL
+          isAdmin
             ? <Navigate to="/admin" />
             : <Landing session={session} player={player} />
         } />
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/register" element={!session ? <Register /> : <Navigate to="/" />} />
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/pending" element={
+          isAdmin ? <Navigate to="/admin" /> :
           session
             ? player?.status === 'approved'
               ? <Navigate to="/" />
@@ -68,6 +70,7 @@ export default function App() {
             : <Navigate to="/login" />
         } />
         <Route path="/dashboard" element={
+          isAdmin ? <Navigate to="/admin" /> :
           session
             ? player?.status === 'approved'
               ? <Dashboard player={player} />
@@ -76,7 +79,11 @@ export default function App() {
         } />
         <Route path="/standings" element={<Standings />} />
         <Route path="/fixtures" element={<Fixtures player={player} />} />
-        <Route path="/admin" element={<Admin session={session} />} />
+        <Route path="/admin" element={
+          isAdmin
+            ? <Admin session={session} />
+            : <Navigate to="/" />
+        } />
         <Route path="/set-password" element={<SetPassword />} />
       </Routes>
       <InstallBanner />
