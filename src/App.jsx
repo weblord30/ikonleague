@@ -13,6 +13,7 @@ import Terms from './pages/Terms'
 import Admin from './pages/Admin'
 import InstallBanner from './components/InstallBanner'
 import SetPassword from './pages/SetPassword'
+import { ADMIN_EMAIL } from './supabase'
 
 export default function App() {
   const [session, setSession] = useState(null)
