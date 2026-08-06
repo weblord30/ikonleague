@@ -1,9 +1,13 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { supabase } from '../supabase'
+import { supabase, ADMIN_EMAIL } from '../supabase'
+import NotificationPanel from './NotificationPanel'
+import { useNotifications } from '../hooks/useNotifications'
 
 export default function Navbar({ session, player }) {
   const nav = useNavigate()
   const loc = useLocation()
+  const isAdmin = session?.user?.email === ADMIN_EMAIL
+  const { notifications, unread, markAllRead } = useNotifications(session?.user?.id)
 
   const logout = async () => { await supabase.auth.signOut(); nav('/') }
 
@@ -11,7 +15,11 @@ export default function Navbar({ session, player }) {
     { path: '/', label: 'Home', icon: '🏠' },
     { path: '/standings', label: 'Standings', icon: '🏆' },
     { path: '/fixtures', label: 'Fixtures', icon: '⚽' },
-    ...(session ? [{ path: '/dashboard', label: 'Profile', icon: '👤' }] : [{ path: '/login', label: 'Login', icon: '🔑' }]),
+    ...(session
+      ? [{ path: '/dashboard', label: 'Profile', icon: '👤' }]
+      : [{ path: '/login', label: 'Login', icon: '🔑' }]
+    ),
+    ...(isAdmin ? [{ path: '/admin', label: 'Admin', icon: '⚙️' }] : []),
   ]
 
   const isActive = (path) => {
@@ -21,7 +29,6 @@ export default function Navbar({ session, player }) {
 
   return (
     <>
-      {/* Top bar — logo only on mobile, full nav on desktop */}
       <nav style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 20px', borderBottom: '1px solid var(--border)',
@@ -32,27 +39,37 @@ export default function Navbar({ session, player }) {
           letterSpacing: '.1em', cursor: 'pointer'
         }}>⚽ ikonLeague</span>
 
-        {/* Desktop nav links — hidden on mobile */}
-        <div className="desktop-nav" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          {tabs.map(t => (
-            <button key={t.path} onClick={() => nav(t.path)} style={{
-              padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', border: 'none',
-              background: isActive(t.path) ? 'var(--green)' : 'transparent',
-              color: isActive(t.path) ? '#000' : 'var(--sub)', transition: '.15s'
-            }}>{t.label}</button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {session && (
-            <button onClick={logout} style={{
-              padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', border: '1px solid var(--border)',
-              background: 'transparent', color: 'var(--sub)', marginLeft: 4
-            }}>Logout</button>
+            <NotificationPanel
+              notifications={notifications}
+              unread={unread}
+              markAllRead={markAllRead}
+            />
           )}
+
+          {/* Desktop nav */}
+          <div className="desktop-nav" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {tabs.map(t => (
+              <button key={t.path} onClick={() => nav(t.path)} style={{
+                padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                cursor: 'pointer', border: 'none',
+                background: isActive(t.path) ? 'var(--green)' : 'transparent',
+                color: isActive(t.path) ? '#000' : 'var(--sub)', transition: '.15s'
+              }}>{t.label}</button>
+            ))}
+            {session && (
+              <button onClick={logout} style={{
+                padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                cursor: 'pointer', border: '1px solid var(--border)',
+                background: 'transparent', color: 'var(--sub)', marginLeft: 4
+              }}>Logout</button>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* Bottom tab bar — mobile only */}
+      {/* Mobile bottom tab bar */}
       <div className="mobile-nav" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 99,
         background: 'var(--dark)', borderTop: '1px solid var(--border)',
