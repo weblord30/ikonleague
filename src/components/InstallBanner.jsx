@@ -96,9 +96,10 @@ export default function InstallBanner() {
             </p>
 
             {[
-              ['1', '📤', 'Tap the Share button', 'The box with an arrow at the bottom of your Safari browser'],
-              ['2', '📲', 'Tap "Add to Home Screen"', 'Scroll down in the share menu until you see this option'],
-              ['3', '✅', 'Tap "Add"', 'ikonLeague will appear on your home screen like a native app'],
+              ['1', '⋯', 'Tap the three dots (•••)', 'Find the three dots icon on the right side of the Safari address bar and tap it'],
+              ['2', '📤', 'Or long press the address bar', 'You can also press and hold the URL bar to bring up the share options'],
+              ['3', '📲', 'Tap "Add to Home Screen"', 'Find and tap "Add to Home Screen" from the menu that appears'],
+              ['4', '✅', 'Tap "Add"', 'ikonLeague will appear on your home screen just like a native app'],
             ].map(([num, icon, title, sub]) => (
               <div key={num} style={{
                 display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 20
