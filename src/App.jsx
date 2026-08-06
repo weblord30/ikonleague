@@ -53,7 +53,7 @@ export default function App() {
       <Navbar session={session} player={player} />
       <Routes>
         <Route path="/" element={
-          session?.user?.email === 'at.trials00@gmail.com'
+          session?.user?.email === ADMIN_EMAIL
             ? <Navigate to="/admin" />
             : <Landing session={session} player={player} />
         } />
