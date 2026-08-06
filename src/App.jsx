@@ -12,6 +12,7 @@ import Fixtures from './pages/Fixtures'
 import Terms from './pages/Terms'
 import Admin from './pages/Admin'
 import InstallBanner from './components/InstallBanner'
+import SetPassword from './pages/SetPassword'
 
 export default function App() {
   const [session, setSession] = useState(null)
