@@ -1,47 +1,88 @@
-import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 
 export default function Navbar({ session, player }) {
   const nav = useNavigate()
   const loc = useLocation()
-  const [open, setOpen] = useState(false)
 
   const logout = async () => { await supabase.auth.signOut(); nav('/') }
 
-  const links = [
-    { path: '/', label: 'Home' },
-    { path: '/standings', label: 'Standings' },
-    { path: '/fixtures', label: 'Fixtures' },
-    ...(session && player?.status === 'approved' ? [{ path: '/dashboard', label: 'My Profile' }] : []),
-    ...(session && !player ? [{ path: '/register', label: 'Register' }] : []),
+  const tabs = [
+    { path: '/', label: 'Home', icon: '🏠' },
+    { path: '/standings', label: 'Standings', icon: '🏆' },
+    { path: '/fixtures', label: 'Fixtures', icon: '⚽' },
+    ...(session ? [{ path: '/dashboard', label: 'Profile', icon: '👤' }] : [{ path: '/login', label: 'Login', icon: '🔑' }]),
   ]
 
-  return (
-    <nav style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '14px 20px', borderBottom: '1px solid var(--border)',
-      background: 'var(--dark)', position: 'sticky', top: 0, zIndex: 99
-    }}>
-      <span onClick={() => nav('/')} style={{
-        fontFamily: 'Bebas Neue', fontSize: 22, color: 'var(--green)',
-        letterSpacing: '.1em', cursor: 'pointer'
-      }}>⚽ ikonLeague</span>
+  const isActive = (path) => {
+    if (path === '/') return loc.pathname === '/'
+    return loc.pathname.startsWith(path)
+  }
 
-      {/* Desktop links */}
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {links.map(l => (
-          <button key={l.path} onClick={() => nav(l.path)} style={{
-            padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-            cursor: 'pointer', border: 'none', background: loc.pathname === l.path ? 'var(--green)' : 'transparent',
-            color: loc.pathname === l.path ? '#000' : 'var(--sub)', transition: '.15s'
-          }}>{l.label}</button>
+  return (
+    <>
+      {/* Top bar — logo only on mobile, full nav on desktop */}
+      <nav style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 20px', borderBottom: '1px solid var(--border)',
+        background: 'var(--dark)', position: 'sticky', top: 0, zIndex: 99
+      }}>
+        <span onClick={() => nav('/')} style={{
+          fontFamily: 'Bebas Neue', fontSize: 22, color: 'var(--green)',
+          letterSpacing: '.1em', cursor: 'pointer'
+        }}>⚽ ikonLeague</span>
+
+        {/* Desktop nav links — hidden on mobile */}
+        <div className="desktop-nav" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {tabs.map(t => (
+            <button key={t.path} onClick={() => nav(t.path)} style={{
+              padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+              cursor: 'pointer', border: 'none',
+              background: isActive(t.path) ? 'var(--green)' : 'transparent',
+              color: isActive(t.path) ? '#000' : 'var(--sub)', transition: '.15s'
+            }}>{t.label}</button>
+          ))}
+          {session && (
+            <button onClick={logout} style={{
+              padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+              cursor: 'pointer', border: '1px solid var(--border)',
+              background: 'transparent', color: 'var(--sub)', marginLeft: 4
+            }}>Logout</button>
+          )}
+        </div>
+      </nav>
+
+      {/* Bottom tab bar — mobile only */}
+      <div className="mobile-nav" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 99,
+        background: 'var(--dark)', borderTop: '1px solid var(--border)',
+        display: 'flex', alignItems: 'stretch',
+        paddingBottom: 'env(safe-area-inset-bottom)'
+      }}>
+        {tabs.map(t => (
+          <button key={t.path} onClick={() => nav(t.path)} style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 4, padding: '10px 4px',
+            border: 'none', background: 'transparent', cursor: 'pointer',
+            borderTop: `2px solid ${isActive(t.path) ? 'var(--green)' : 'transparent'}`,
+            transition: '.15s'
+          }}>
+            <span style={{ fontSize: 20 }}>{t.icon}</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: isActive(t.path) ? 'var(--green)' : 'var(--muted)', letterSpacing: '.03em' }}>{t.label}</span>
+          </button>
         ))}
-        {session
-          ? <button onClick={logout} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1px solid var(--border)', background: 'transparent', color: 'var(--sub)', marginLeft: 4 }}>Logout</button>
-          : <button onClick={() => nav('/login')} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none', background: 'var(--green)', color: '#000', marginLeft: 4 }}>Login</button>
-        }
       </div>
-    </nav>
+
+      <style>{`
+        @media (min-width: 640px) {
+          .mobile-nav { display: none !important; }
+          .desktop-nav { display: flex !important; }
+        }
+        @media (max-width: 639px) {
+          .mobile-nav { display: flex !important; }
+          .desktop-nav { display: none !important; }
+        }
+      `}</style>
+    </>
   )
 }
