@@ -11,6 +11,7 @@ import Standings from './pages/Standings'
 import Fixtures from './pages/Fixtures'
 import Terms from './pages/Terms'
 import Admin from './pages/Admin'
+import InstallBanner from './components/InstallBanner'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/fixtures" element={<Fixtures player={player} />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
+      <InstallBanner />
     </>
   )
 }
