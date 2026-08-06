@@ -57,10 +57,18 @@ export default function Admin({ session }) {
     load()
   }
 
-  const reject = async (player) => {
-    await supabase.from('players').update({ status: 'rejected' }).eq('id', player.id)
-    await createNotification(player.user_id, 'Payment not verified', 'We could not verify your payment screenshot. Please contact admin on WhatsApp to resolve this.', 'rejected')
-    flash('Player rejected')
+  const reject = async (player, reason) => {
+    if (reason === 'no_payment') {
+      if (!window.confirm(`Delete ${player.full_name}'s account entirely? They will need to register again.`)) return
+      await createNotification(player.user_id, 'Registration rejected', 'Your payment could not be verified and your account has been removed. Please register again and ensure you upload a clear payment screenshot.', 'rejected')
+      await new Promise(r => setTimeout(r, 500))
+      await supabase.from('players').delete().eq('id', player.id)
+      flash('Player account deleted')
+    } else {
+      await supabase.from('players').update({ status: 'reupload' }).eq('id', player.id)
+      await createNotification(player.user_id, 'Screenshot unclear 📸', 'We could not verify your payment screenshot clearly. Please re-upload a clearer image of your payment receipt.', 'rejected')
+      flash('Player asked to re-upload ✓')
+    }
     load()
   }
 
@@ -72,12 +80,9 @@ export default function Admin({ session }) {
     await supabase.from('fixtures').delete().neq('id', '00000000-0000-0000-0000-000000000000')
     const newFixtures = generateRoundRobin(approved)
     await supabase.from('fixtures').insert(newFixtures)
-
-    // Notify all approved players
     for (const p of approved) {
       await createNotification(p.user_id, 'Fixtures are live! ⚽', `Season 1 fixtures have been generated. ${newFixtures.length} matches across ${[...new Set(newFixtures.map(f => f.matchday))].length} matchdays. Check the Fixtures tab.`, 'fixture')
     }
-
     flash(`${newFixtures.length} fixtures generated ✓`)
     setLoading(false)
     load()
@@ -87,14 +92,11 @@ export default function Admin({ session }) {
     const s = scores[f.id] || {}
     if (s.h === undefined || s.a === undefined) { flash('Enter both scores'); return }
     await supabase.from('fixtures').update({ home_goals: s.h, away_goals: s.a, played: true }).eq('id', f.id)
-
-    // Notify both players
     const home = players.find(p => p.id === f.home_player_id)
     const away = players.find(p => p.id === f.away_player_id)
     const scoreText = `${s.h} - ${s.a}`
     if (home) await createNotification(home.user_id, 'Match result recorded 🏆', `Your match result has been confirmed: ${home.full_name} ${scoreText} ${away?.full_name}. Check the standings.`, 'result')
     if (away) await createNotification(away.user_id, 'Match result recorded 🏆', `Your match result has been confirmed: ${home?.full_name} ${scoreText} ${away.full_name}. Check the standings.`, 'result')
-
     setScores(x => { const n = { ...x }; delete n[f.id]; return n })
     flash('Score saved ✓')
     load()
@@ -110,11 +112,10 @@ export default function Admin({ session }) {
     load()
   }
 
-  const pending = players.filter(p => p.status === 'pending')
+  const pending = players.filter(p => p.status === 'pending' || p.status === 'reupload')
   const approved = players.filter(p => p.status === 'approved')
   const playerMap = Object.fromEntries(players.map(p => [p.id, p]))
 
-  // Find disputed fixtures — both players submitted but scores differ
   const disputes = fixtures.filter(f => {
     if (f.played) return false
     const subs = submissions.filter(s => s.fixture_id === f.id)
@@ -122,7 +123,6 @@ export default function Admin({ session }) {
     return subs[0].home_goals !== subs[1].home_goals || subs[0].away_goals !== subs[1].away_goals
   })
 
-  // Find pending submissions — one player submitted, waiting for other
   const pendingSubmissions = fixtures.filter(f => {
     if (f.played) return false
     const subs = submissions.filter(s => s.fixture_id === f.id)
@@ -174,17 +174,21 @@ export default function Admin({ session }) {
         <div>
           {pending.length === 0 && <p style={{ color: 'var(--muted)', fontSize: 14 }}>No pending registrations.</p>}
           {pending.map(p => (
-            <div key={p.id} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px', marginBottom: 12 }}>
+            <div key={p.id} style={{ background: 'var(--card)', border: `1px solid ${p.status === 'reupload' ? 'rgba(245,158,11,.3)' : 'var(--border)'}`, borderRadius: 14, padding: '18px 20px', marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{p.full_name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{p.full_name}</div>
+                    {p.status === 'reupload' && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(245,158,11,.15)', color: 'var(--amber)', fontWeight: 600 }}>RE-UPLOADED</span>}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--sub)', marginTop: 3 }}>@{p.username} · Team: {p.team_name}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>WhatsApp: {p.whatsapp}</div>
                   <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{new Date(p.created_at).toLocaleString()}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button onClick={() => approve(p)} style={{ padding: '8px 18px', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Approve</button>
-                  <button onClick={() => reject(p)} style={{ padding: '8px 18px', background: 'rgba(239,68,68,.15)', color: 'var(--red)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Reject</button>
+                  <button onClick={() => reject(p, 'bad_screenshot')} style={{ padding: '8px 18px', background: 'rgba(245,158,11,.15)', color: 'var(--amber)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Bad Screenshot</button>
+                  <button onClick={() => reject(p, 'no_payment')} style={{ padding: '8px 18px', background: 'rgba(239,68,68,.15)', color: 'var(--red)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>No Payment</button>
                 </div>
               </div>
               {p.payment_screenshot && (
@@ -212,7 +216,6 @@ export default function Admin({ session }) {
               <div key={f.id} style={{ background: 'var(--card)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 14, padding: '18px 20px', marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)', letterSpacing: '.06em', marginBottom: 12 }}>DISPUTED RESULT</div>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>{home?.full_name} vs {away?.full_name} · Matchday {f.matchday}</div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                   {subs.map((s, i) => {
                     const submitter = players.find(p => p.id === s.submitted_by)
@@ -236,7 +239,6 @@ export default function Admin({ session }) {
               </div>
             )
           })}
-
           {pendingSubmissions.length > 0 && (
             <>
               <h3 style={{ fontSize: 18, margin: '24px 0 14px', color: 'var(--amber)' }}>Waiting for second submission</h3>
@@ -273,7 +275,9 @@ export default function Admin({ session }) {
                 <div style={{ fontWeight: 600, fontSize: 13 }}>{p.full_name}</div>
                 <div style={{ fontSize: 11, color: 'var(--sub)', marginTop: 2 }}>@{p.username} · {p.team_name} · {p.whatsapp}</div>
               </div>
-              <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: p.status === 'approved' ? 'rgba(0,200,150,.15)' : p.status === 'rejected' ? 'rgba(239,68,68,.15)' : 'rgba(245,158,11,.15)', color: p.status === 'approved' ? 'var(--green)' : p.status === 'rejected' ? 'var(--red)' : 'var(--amber)' }}>
+              <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                background: p.status === 'approved' ? 'rgba(0,200,150,.15)' : p.status === 'rejected' ? 'rgba(239,68,68,.15)' : p.status === 'reupload' ? 'rgba(245,158,11,.15)' : 'rgba(245,158,11,.15)',
+                color: p.status === 'approved' ? 'var(--green)' : p.status === 'rejected' ? 'var(--red)' : 'var(--amber)' }}>
                 {p.status}
               </span>
             </div>
@@ -290,7 +294,6 @@ export default function Admin({ session }) {
               {loading ? 'Generating...' : fixtures.length ? 'Regenerate Fixtures' : 'Generate Fixtures'}
             </button>
           </div>
-
           {fixtures.length === 0 && <p style={{ color: 'var(--muted)', fontSize: 14 }}>No fixtures yet.</p>}
           {[...new Set(fixtures.map(f => f.matchday))].sort((a, b) => a - b).map(md => (
             <div key={md}>
