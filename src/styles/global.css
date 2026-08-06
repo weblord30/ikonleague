@@ -36,3 +36,35 @@ input, select, textarea {
 }
 
 a { text-decoration: none; color: inherit; }
+
+/* Mobile bottom nav spacing — so content isn't hidden behind the tab bar */
+@media (max-width: 639px) {
+  body {
+    padding-bottom: 80px;
+  }
+}
+
+/* Responsive page padding */
+@media (max-width: 639px) {
+  .wide, .page {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+}
+
+/* Responsive grids */
+@media (max-width: 480px) {
+  table {
+    font-size: 11px;
+  }
+  th, td {
+    padding: 8px 8px !important;
+  }
+}
+
+/* PWA safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
