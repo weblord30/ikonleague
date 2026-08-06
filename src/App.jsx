@@ -72,6 +72,7 @@ export default function App() {
         <Route path="/standings" element={<Standings />} />
         <Route path="/fixtures" element={<Fixtures player={player} />} />
         <Route path="/admin" element={<Admin session={session} />} />
+        <Route path="/set-password" element={<SetPassword />} />
       </Routes>
       <InstallBanner />
     </>
